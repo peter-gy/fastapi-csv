@@ -2,18 +2,17 @@
 Contains the main `FastAPI_CSV` class, which wraps `FastAPI`.
 """
 
-import os
-from typing import Union, Type
-from pathlib import Path
 import inspect
 import logging
-
-from fastapi import FastAPI
-import fastapi
-import pandas as pd
 import sqlite3
+from pathlib import Path
+from typing import Union, Type
+
+import fastapi
 import numpy as np
+import pandas as pd
 import pydantic
+from fastapi import FastAPI
 
 
 def create_query_param(name: str, type_: Type, default) -> pydantic.fields.ModelField:
@@ -93,6 +92,8 @@ class FastAPI_CSV(FastAPI):
                         where_clauses.append(f"{name[:-14]}<={val}")
                     elif name.endswith("_contains"):
                         where_clauses.append(f"instr({name[:-9]}, '{val}') > 0")
+                    elif name.endswith("_like"):
+                        where_clauses.append(f"{name[:-5]} LIKE {val}")
                     else:
                         if isinstance(val, str):
                             val = f"'{val}'"
@@ -124,6 +125,7 @@ class FastAPI_CSV(FastAPI):
                 self._add_query_param(route_path, col + "_lessThanEqual", type_)
             elif type_ == str:
                 self._add_query_param(route_path, col + "_contains", type_)
+                self._add_query_param(route_path, col + "_like", type_)
 
     def query_database(self, sql_query):
         """Executes a SQL query on the database and returns rows as list of dicts."""

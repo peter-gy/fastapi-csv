@@ -7,15 +7,14 @@ import uvicorn
 
 from .applications import FastAPI_CSV
 
-
 typer_app = typer.Typer()
 
 
 @typer_app.command()
 def main(
-    csv_path: str = typer.Argument(..., help="Path to the CSV file"),
-    host: str = typer.Option("127.0.0.1", help="IP to run the API on"),
-    port: int = typer.Option(8000, help="Port to run the API on"),
+        csv_path: str = typer.Argument(..., help="Path to the CSV file"),
+        host: str = typer.Option("127.0.0.1", help="IP to run the API on"),
+        port: int = typer.Option(8000, help="Port to run the API on"),
 ):
     """
     🏗️ Create APIs from CSV files within seconds, using fastapi.
@@ -32,3 +31,7 @@ def main(
     )
     typer.echo("-" * 80)
     uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == '__main__':
+    typer.run(main)
