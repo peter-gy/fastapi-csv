@@ -93,7 +93,7 @@ class FastAPI_CSV(FastAPI):
                     elif name.endswith("_contains"):
                         where_clauses.append(f"instr({name[:-9]}, '{val}') > 0")
                     elif name.endswith("_like"):
-                        where_clauses.append(f"{name[:-5]} LIKE {val}")
+                        where_clauses.append(f"{name[:-5]} LIKE '{val}'")
                     else:
                         if isinstance(val, str):
                             val = f"'{val}'"
