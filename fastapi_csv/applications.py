@@ -82,9 +82,12 @@ class FastAPI_CSV(FastAPI):
         def generic_get(**kwargs):
             selected_cols = []
             where_clauses = []
+            use_distinct = False
             for name, val in kwargs.items():
                 if val is not None:
-                    if name.endswith("_selected"):
+                    if name == "use_distinct":
+                        use_distinct = True
+                    elif name.endswith("_selected"):
                         selected_cols.append(name[:-9])
                     elif name.endswith("_greaterThan"):
                         where_clauses.append(f"{name[:-12]}>{val}")
@@ -110,7 +113,7 @@ class FastAPI_CSV(FastAPI):
                 where = ""
 
             selection = ','.join(selected_cols)
-            sql_query = f"SELECT {selection if len(selected_cols) else '*'} FROM {self.table_name} {where}"
+            sql_query = f"SELECT {'DISTINCT' if use_distinct else ''} {selection if len(selected_cols) else '*'} FROM {self.table_name} {where}"
             dicts = self.query_database(sql_query)
             return dicts
 
@@ -121,12 +124,15 @@ class FastAPI_CSV(FastAPI):
         # Remove all auto-generated query parameters (=one for `kwargs`).
         self._clear_query_params(route_path)
 
+        # Add use_distinct query param
+        self._add_query_param(route_path, 'use_distinct', bool)
+
         # Add new query parameters based on column names and data types.
         for col, dtype in zip(df.columns, df.dtypes):
             type_ = dtype_to_type(dtype)
             self._add_query_param(route_path, col, type_)
             # Use as a flag to select only given columns
-            self._add_query_param(route_path, col + "_selected", type_)
+            self._add_query_param(route_path, col + "_selected", bool)
             if type_ in (int, float):
                 self._add_query_param(route_path, col + "_greaterThan", type_)
                 self._add_query_param(route_path, col + "_greaterThanEqual", type_)
