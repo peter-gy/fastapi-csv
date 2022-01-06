@@ -80,10 +80,13 @@ class FastAPI_CSV(FastAPI):
 
         # First, define a generic endpoint method, which queries the database.
         def generic_get(**kwargs):
+            selected_cols = []
             where_clauses = []
             for name, val in kwargs.items():
                 if val is not None:
-                    if name.endswith("_greaterThan"):
+                    if name.endswith("_selected"):
+                        selected_cols.append(name[:-9])
+                    elif name.endswith("_greaterThan"):
                         where_clauses.append(f"{name[:-12]}>{val}")
                     elif name.endswith("_greaterThanEqual"):
                         where_clauses.append(f"{name[:-17]}>={val}")
@@ -106,7 +109,8 @@ class FastAPI_CSV(FastAPI):
             else:
                 where = ""
 
-            sql_query = f"SELECT * FROM {self.table_name} {where}"
+            selection = ','.join(selected_cols)
+            sql_query = f"SELECT {selection if len(selected_cols) else '*'} FROM {self.table_name} {where}"
             dicts = self.query_database(sql_query)
             return dicts
 
@@ -121,6 +125,8 @@ class FastAPI_CSV(FastAPI):
         for col, dtype in zip(df.columns, df.dtypes):
             type_ = dtype_to_type(dtype)
             self._add_query_param(route_path, col, type_)
+            # Use as a flag to select only given columns
+            self._add_query_param(route_path, col + "_selected", type_)
             if type_ in (int, float):
                 self._add_query_param(route_path, col + "_greaterThan", type_)
                 self._add_query_param(route_path, col + "_greaterThanEqual", type_)
