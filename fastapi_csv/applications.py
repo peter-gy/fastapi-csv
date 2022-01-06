@@ -4,6 +4,7 @@ Contains the main `FastAPI_CSV` class, which wraps `FastAPI`.
 
 import inspect
 import logging
+import re
 import sqlite3
 from pathlib import Path
 from typing import Union, Type
@@ -94,6 +95,8 @@ class FastAPI_CSV(FastAPI):
                         where_clauses.append(f"instr({name[:-9]}, '{val}') > 0")
                     elif name.endswith("_like"):
                         where_clauses.append(f"{name[:-5]} LIKE '{val}'")
+                    elif name.endswith("_regex"):
+                        where_clauses.append(f"{name[:-6]} REGEXP '{val}'")
                     else:
                         if isinstance(val, str):
                             val = f"'{val}'"
@@ -126,6 +129,7 @@ class FastAPI_CSV(FastAPI):
             elif type_ == str:
                 self._add_query_param(route_path, col + "_contains", type_)
                 self._add_query_param(route_path, col + "_like", type_)
+                self._add_query_param(route_path, col + "_regex", type_)
 
     def query_database(self, sql_query):
         """Executes a SQL query on the database and returns rows as list of dicts."""
@@ -180,6 +184,15 @@ class FastAPI_CSV(FastAPI):
 
         self.con.row_factory = dict_factory
         logging.info("Database successfully updated")
+
+        # Implement the REGEXP operator in SQLite.
+        def regexp(expr, item):
+            if item is None:
+                return False
+            reg = re.compile(expr)
+            return reg.search(item) is not None
+
+        self.con.create_function("REGEXP", 2, regexp)
 
         return df
 
