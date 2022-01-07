@@ -16,6 +16,11 @@ import pydantic
 from fastapi import FastAPI
 
 
+def is_date_string(string: str) -> bool:
+    """Check if a string is a date string."""
+    return re.match(r"^([0-9]{4})-(?:[0-9]{2})-([0-9]{2})$", string) is not None
+
+
 def create_query_param(name: str, type_: Type, default) -> pydantic.fields.ModelField:
     """Create a query parameter just like fastapi does."""
     param = inspect.Parameter(
@@ -103,6 +108,10 @@ class FastAPI_CSV(FastAPI):
                         where_clauses.append(f"{name[:-5]} LIKE '{val}'")
                     elif name.endswith("_regex"):
                         where_clauses.append(f"{name[:-6]} REGEXP '{val}'")
+                    elif name.endswith("_isBefore"):
+                        where_clauses.append(f"DATE({name[:-9]}) < DATE('{val}')")
+                    elif name.endswith("_isAfter"):
+                        where_clauses.append(f"DATE({name[:-8]}) > DATE('{val}')")
                     else:
                         if isinstance(val, str):
                             val = f"'{val}'"
@@ -142,6 +151,9 @@ class FastAPI_CSV(FastAPI):
                 self._add_query_param(route_path, col + "_contains", type_)
                 self._add_query_param(route_path, col + "_like", type_)
                 self._add_query_param(route_path, col + "_regex", type_)
+                if is_date_string(df[col].iloc[df[col].first_valid_index()]):
+                    self._add_query_param(route_path, col + "_isBefore", type_)
+                    self._add_query_param(route_path, col + "_isAfter", type_)
 
     def query_database(self, sql_query):
         """Executes a SQL query on the database and returns rows as list of dicts."""
