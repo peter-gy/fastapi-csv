@@ -194,7 +194,7 @@ class FastAPI_CSV(FastAPI):
 
         # Download excel file from Google Sheets, read it with pandas and write to
         # database.
-        df = pd.read_csv(self.csv_path)
+        df = pd.read_csv(self.csv_path, engine ='python')
         self.con = sqlite3.connect(":memory:", check_same_thread=False)
         df.to_sql(self.table_name, self.con)
 
